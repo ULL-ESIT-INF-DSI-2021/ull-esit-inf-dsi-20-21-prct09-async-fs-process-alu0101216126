@@ -22,3 +22,8 @@ Antes de comenzar a realizar los ejercicios, deberíamos realizar las siguientes
 - Familiarícese con el API de callbacks proporcionada por Node.js para interactuar con el sistema de ficheros.
 - Familiarícese con el API asíncrona proporcionada por Node.js para crear procesos y, en concreto, con la función spawn.
 
+### 4. Ejercicios
+
+Todos el código fuente de los ejercicios realizados a continuación, deben estar alojados en ficheros independientes, cuyo nombre  será `ejercicio-n`. Utilizaremos la [estructura básica del proyecto vista en clase](https://ull-esit-inf-dsi-2021.github.io/typescript-theory/typescript-project-setup.html), por lo que incluiremos todos los ejercicios en el directorio `./src` de dicho proyecto.
+
+Para la documentación usaremos **TypeDoc** ([Instrucciones](https://drive.google.com/file/d/19LLLCuWg7u0TjjKz9q8ZhOXgbrKtPUme/view)) 
