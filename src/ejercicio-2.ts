@@ -116,6 +116,6 @@ yargs.command({
 });
 
 /**
- * Process arguments passed from command line to application
+ * Process arguments passed from command line to application.
  */
 yargs.parse();

@@ -1,3 +1,7 @@
+/**
+ * Este ejercicio se llevará a cabo en el informe debido a que es una traza
+ */
+
 import {access, constants, watch} from 'fs';
 
 if (process.argv.length !== 3) {

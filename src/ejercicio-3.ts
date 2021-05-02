@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as yargs from 'yargs';
 
 /**
- * Yargs execution of the watch command. The corresponding command line options must be included
+ * Yargs execution of the watch command. The corresponding command line options must be included.
  */
 yargs.command({
   command: 'watch',

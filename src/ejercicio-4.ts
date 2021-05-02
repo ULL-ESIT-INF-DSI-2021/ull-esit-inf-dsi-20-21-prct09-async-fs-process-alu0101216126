@@ -4,6 +4,9 @@ import * as fs from 'fs';
 import * as yargs from 'yargs';
 import {spawn} from 'child_process';
 
+/**
+ * Yargs execution of the type command. The corresponding command line options must be included
+ */
 yargs.command({
   command: 'type',
   describe: 'Check if the received path is a directory or a file',
@@ -27,6 +30,9 @@ yargs.command({
   },
 });
 
+/**
+ * Yargs execution of the mkdir command. The corresponding command line options must be included
+ */
 yargs.command({
   command: 'mkdir',
   describe: 'Add an directory',
@@ -47,6 +53,9 @@ yargs.command({
   },
 });
 
+/**
+ * Yargs execution of the list command. The corresponding command line options must be included
+ */
 yargs.command({
   command: 'list',
   describe: 'Shows the contents of a directory',
@@ -71,6 +80,9 @@ yargs.command({
   },
 });
 
+/**
+ * Yargs execution of the cat command. The corresponding command line options must be included
+ */
 yargs.command({
   command: 'cat',
   describe: 'Show the content of a file',
@@ -91,6 +103,9 @@ yargs.command({
   },
 });
 
+/**
+ * Yargs execution of the rm command. The corresponding command line options must be included
+ */
 yargs.command({
   command: 'rm',
   describe: 'Delete a file or directory',
@@ -124,6 +139,9 @@ yargs.command({
   },
 });
 
+/**
+ * Yargs execution of the cp command. The corresponding command line options must be included
+ */
 yargs.command({
   command: 'cp',
   describe: 'Copy a file or directory',
@@ -160,4 +178,7 @@ yargs.command({
   },
 });
 
+/**
+ * Process arguments passed from command line to application
+ */
 yargs.parse();
