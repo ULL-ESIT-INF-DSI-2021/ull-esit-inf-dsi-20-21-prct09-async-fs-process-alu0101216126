@@ -27,7 +27,7 @@ yargs.command({
         let wait: boolean = false;
 
         // error handling
-        if (err) console.log(argv.user + '\'s directory doesn\'t exist');
+        if (err) console.log(argv.user + ' can\'t access');
 
         else {
           fs.watch('./database/' + argv.user, (eventType, filename) => {
