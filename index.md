@@ -181,3 +181,185 @@ A continuación realizaremos una traza de ejecución del código anterior tenien
 ¿Para qué sirve el objeto `constants`?
 
 **fs.constants:** Contiene todo los valores (flags) para fs.access. Es decir, fs.access debe recibir una de estas constantes, ya que según lo recibido se comprueba el permiso en específico del usuario. En este caso usa 'F_OK' para comprobar si el usuario puede ver el fichero. Otras flags que tiene son R_OK, W_OK, X_OK, que comprueban permisos de Lectura, Escritura y Ejecución respectivamente.
+
+### 4.2 Ejercicio 2
+
+**Enunciado:**
+
+Escriba una aplicación que proporcione información sobre el número de líneas, palabras o caracteres que contiene un fichero de texto. La ruta donde se encuentra el fichero debe ser un parámetro pasado a la aplicación desde la línea de comandos. Adicionalmente, también deberá indicarle al programa desde la línea de comandos si desea visualizar el número de líneas, palabras, caracteres o combinaciones de ellas. Puede gestionar el paso de parámetros desde la línea de comandos haciendo uso de yargs.
+
+Lleve a cabo el ejercicio anterior de dos maneras diferentes:
+
+- Haciendo uso del método pipe de un Stream para poder redirigir la salida de un comando hacia otro.
+- Sin hacer uso del método pipe, solamente creando los subprocesos necesarios y registrando manejadores a aquellos eventos necesarios para implementar la funcionalidad solicitada.
+
+Para lo anterior, se recomienda leer la documentación de Stream. Piense que la propiedad stdin de un objeto ChildProcess es un Stream de escritura, mientras que su propiedad stdout es un Stream de lectura.
+
+Por último, programe defensivamente, es decir, trate de controlar los potenciales errores que podrían surgir a la hora de ejecutar su programa. Por ejemplo, ¿qué sucede si indica desde la línea de comandos un fichero que no existe o una opción no válida?
+
+**Código**
+
+```ts
+import {spawn} from 'child_process';
+import * as yargs from 'yargs';
+import * as fs from 'fs';
+
+/**
+ * Provide information about the number of lines, words or characters that a text file contains. Making use of pipe, spawn and stream
+ * @param path File path
+ * @param characters Indicate if the user wants to see the characters amount
+ * @param words Indicate if the user wants to see the words amount
+ * @param lines Indicate if the user wants to see the lines amount
+ */
+function withPipe(path: string, characters: boolean, words: boolean, lines: boolean) {
+  fs.access(path, fs.constants.F_OK, (err) => {
+    if (err) console.log('Path doesn\'t exist');
+    else {
+      let wcOutput = '';
+      const wc = spawn('wc', [path]);
+      wc.stdout.on('data', (piece) => (wcOutput += piece));
+
+      wc.on('close', () => {
+        const wcOutputAsArray = wcOutput.split(/\s+/);
+        if (lines) { // if the user wants to see the lines amount
+          const echo = spawn('echo', [`File's lines: ${wcOutputAsArray[1]}`]);
+          echo.stdout.pipe(process.stdout);
+        }
+        if (words) { // if the user wants to see the words amount
+          const echo = spawn('echo', [`File's words: ${wcOutputAsArray[2]}`]);
+          echo.stdout.pipe(process.stdout);
+        }
+        if (characters) { // if the user wants to see the characters amount
+          const echo = spawn('echo', [`File's characters: ${wcOutputAsArray[3]}`]);
+          echo.stdout.pipe(process.stdout);
+        }
+      });
+    }
+  });
+}
+
+/**
+ * Provide information about the number of lines, words or characters that a text file contains. Without making use of pipe, spawn and stream
+ * @param path File path
+ * @param characters Indicate if the user wants to see the characters amount
+ * @param words Indicate if the user wants to see the words amount
+ * @param lines Indicate if the user wants to see the lines amount
+ */
+function withoutPipe(path: string, characters: boolean, words: boolean, lines: boolean): void {
+  fs.access(path, fs.constants.F_OK, (err) => {
+    if (err) console.log('Path doesn\'t exist');
+    else {
+      let wcOutput = '';
+      const wc = spawn('wc', [path]);
+      wc.stdout.on('data', (piece) => (wcOutput += piece));
+
+      wc.on('close', () => {
+        const wcOutputAsArray = wcOutput.split(/\s+/);
+        let final = '';
+        if (lines) { // if the user wants to see the lines amount
+          final+= `File's lines: ${wcOutputAsArray[1]}\n`;
+        }
+        if (words) { // if the user wants to see the words amount
+          final+= `File's words: ${wcOutputAsArray[2]}\n`;
+        }
+        if (characters) { // if the user wants to see the characters amount
+          final+= `File's characters: ${wcOutputAsArray[3]}\n`;
+        }
+        console.log(final);
+      });
+    }
+  });
+}
+
+/**
+ * Yargs execution of the show command. The corresponding command line options must be included
+ */
+yargs.command({
+  command: 'show',
+  describe: 'Shows the information of a file',
+  builder: {
+    file: {
+      describe: 'File\'s path',
+      demandOption: true,
+      type: 'string',
+    },
+    pipe: {
+      describe: 'Whether to use a pipe or not',
+      demandOption: true,
+      type: 'boolean',
+    },
+    lines: {
+      describe: 'Count lines or not',
+      demandOption: true,
+      type: 'boolean',
+    },
+    words: {
+      describe: 'Count words or not',
+      demandOption: true,
+      type: 'boolean',
+    },
+    characters: {
+      describe: 'Count characters or not',
+      demandOption: true,
+      type: 'boolean',
+    },
+  },
+  handler(argv) {
+    if (typeof argv.file === 'string' && typeof argv.pipe === 'boolean'&&
+    typeof argv.characters === 'boolean' && typeof argv.words === 'boolean'&&
+    typeof argv.lines === 'boolean') {
+      if (argv.pipe) {
+        withPipe(argv.file, argv.characters, argv.words, argv.lines);
+      } else {
+        withoutPipe(argv.file, argv.characters, argv.words, argv.lines);
+      }
+    }
+  },
+});
+
+/**
+ * Process arguments passed from command line to application.
+ */
+yargs.parse();
+```
+
+Se nos pide realizar el mismo ejercicio tanto con el uso de pipe, como sin él, es por ello que entre los argumentos del yarg indicaremos cuál queremos usar. El comando se llama show, y los argumentos son los siguientes:
+
+- file:  Tipo string. Se indica la ruta del fichero.
+- pipe: Tipo bool.  Se indica si se va a trabajar con pipe o no.
+- lines: Tipo bool. Se indica si se quiere la cantidad de líneas o no.
+- words: Tipo bool. Se indica si se quiere la cantidad de palabras o no.
+- characters: Tipo bool. Se indica si se quiere la cantidad de caracteres o no.
+
+Si **pipe** es true, se invoca al método `withPipe()` con los argumentos correspondientes, sino, se invoca a `withoutPipe()`
+
+`withPipe()`
+
+Argumentos:
+
+- path:  Tipo string. Se indica la ruta del fichero.
+- lines: Tipo bool. Se indica si se quiere la cantidad de líneas o no.
+- words: Tipo bool. Se indica si se quiere la cantidad de palabras o no.
+- characters: Tipo bool. Se indica si se quiere la cantidad de caracteres o no.
+
+Primeramente generamos un nuevo proceso para el comando **wc**, mediante la función asíncrona **spawn**, a su vez le pasamos un argumento que corresponde con la ruta del fichero. De esta manera realizaremos el comando `wc ‘path’`, y lo almacenamos en la variable **wc**, que es de tipo `childProcess`.
+
+A continuación a dicha variable le aplicaremos la propiedad de lectura `stdout`, esta es un objeto de tipo `Stream`, de esta manera obtendremos la salida del comando en nuestra variable `wcOutupt`. Posteriormente, separamos dicha variable por espacios gracias a la función `split()`, así obtendremos cada valor de la variable wcOutput en una posición del array, este array se llamará `wcOutputArray`.
+
+Finalmente, mostraremos la cantidad de líneas, palabras o caracteres del fichero, según se haya especificado en los parámetros recibidos. Esto lo conseguiremos ejecutando el comando **echo** mediante **spawn**, y redirigiendo la salida de dicho comando a la salida de la terminal, mediante la propiedad de lectura `stdout`y el método **pipe**, como argumento a pipe a que indicarle donde se va a mostrar la salida, por ello ponemos ``process.stdout``, para que nos lo muestre por la terminal actual.
+
+`withoutPipe()`
+
+Argumentos:
+
+- path:  Tipo string. Se indica la ruta del fichero.
+- lines: Tipo bool. Se indica si se quiere la cantidad de líneas o no.
+- words: Tipo bool. Se indica si se quiere la cantidad de palabras o no.
+- characters: Tipo bool. Se indica si se quiere la cantidad de caracteres o no.
+
+Primeramente generamos un nuevo proceso para el comando **wc**, mediante la función asíncrona **spawn**, a su vez le pasamos un argumento que corresponde con la ruta del fichero. De esta manera realizaremos el comando `wc ‘path’`, y lo almacenamos en la variable **wc**, que es de tipo `childProcess`.
+
+A continuación a dicha variable le aplicaremos la propiedad de lectura `stdout`, esta es un objeto de tipo `Stream`, de esta manera obtendremos la salida del comando en nuestra variable `wcOutupt`. Posteriormente, separamos dicha variable por espacios gracias a la función `split()`, así obtendremos cada valor de la variable wcOutput en una posición del array, este array se llamará `wcOutputArray`.
+
+Finalmente, mostraremos la cantidad de líneas, palabras o caracteres del fichero, según se haya especificado en los parámetros recibidos. Como esta vez no podemos usar **pipe** para redirigir la salida, simplemente guardamos las salidas en la string `final`, y al final del método realizamos un `console.log()` de dicha string.
+
