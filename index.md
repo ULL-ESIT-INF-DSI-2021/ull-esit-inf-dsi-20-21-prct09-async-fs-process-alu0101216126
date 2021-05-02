@@ -464,4 +464,246 @@ Para crear el fichero o modificarlo, pues emplearía una función asíncrona den
 
 Lo que se debería de hacer primeramente, sería que en vez de pasarle la ruta `./database/user`, se le pasaría solo `./database`, es decir, el directorio que contiene todos los directorios de los distintos usuarios con sus notas. Una vez realizado esto, se debería incluir `{recursive: true}` como argumento de la función `watch`, con esto indicamos que también se deben observar todos los directorios que contiene el propio directorio `./database`.
 
+### 4.4 Ejercicio 4
+
+**Enunciado**
+
+Desarrolle una aplicación que permita hacer de wrapper de los distintos comandos empleados en Linux para el manejo de ficheros y directorios. En concreto, la aplicación deberá permitir:
+
+1. Dada una ruta concreta, mostrar si es un directorio o un fichero.
+2. Crear un nuevo directorio a partir de una nueva ruta que recibe como parámetro.
+3. Listar los ficheros dentro de un directorio.
+4. Mostrar el contenido de un fichero (similar a ejecutar el comando cat).
+5. Borrar ficheros y directorios.
+6. Mover y copiar ficheros y/o directorios de una ruta a otra. Para este caso, la aplicación recibirá una ruta origen y una ruta destino. En caso de que la ruta origen represente un directorio, se debe copiar dicho directorio y todo su contenido a la ruta destino.
+Para interactuar con la aplicación a través de la línea de comandos, puede hacer uso de yargs.
+
+Programe defensivamente, esto es, trate de controlar todos los potenciales errores que podrían surgir a la hora de ejecutar su programa.
+
+**Código**
+
+```ts
+/* eslint-disable no-unused-vars */
+/* eslint-disable brace-style */
+import * as fs from 'fs';
+import * as yargs from 'yargs';
+import {spawn} from 'child_process';
+
+/**
+ * Yargs execution of the type command. The corresponding command line options must be included
+ */
+yargs.command({
+  command: 'type',
+  describe: 'Check if the received path is a directory or a file',
+  builder: {
+    path: {
+      describe: 'path of the file or directory',
+      demandOption: true,
+      type: 'string',
+    },
+  },
+  handler(argv) {
+    if (typeof argv.path === 'string') {
+      fs.stat(argv.path, (err, stats) => {
+        if (!err) {
+          if (stats.isFile()) console.log(argv.path + ' is a file');
+          else if (stats.isDirectory()) console.log(argv.path + ' is a directroy');
+        }
+        else console.log(argv.path + '\'s path doesn\'t exist');
+      });
+    }
+  },
+});
+
+/**
+ * Yargs execution of the mkdir command. The corresponding command line options must be included
+ */
+yargs.command({
+  command: 'mkdir',
+  describe: 'Add an directory',
+  builder: {
+    path: {
+      describe: 'Directory\'s path',
+      demandOption: true,
+      type: 'string',
+    },
+  },
+  handler(argv) {
+    if (typeof argv.path === 'string') {
+      fs.mkdir(argv.path, {recursive: true}, (err) => {
+        if (err) console.log('Cannot create directory in specified path');
+        else console.log('Directory successfully created on: ' + argv.path);
+      });
+    }
+  },
+});
+
+/**
+ * Yargs execution of the list command. The corresponding command line options must be included
+ */
+yargs.command({
+  command: 'list',
+  describe: 'Shows the contents of a directory',
+  builder: {
+    path: {
+      describe: 'Directory\'s path',
+      demandOption: true,
+      type: 'string',
+    },
+  },
+  handler(argv) {
+    if (typeof argv.path === 'string') {
+      fs.readdir(argv.path, (err, directory) => {
+        if (err) console.log(`Directory on ${argv.path} doesn´t exit`);
+
+        else {
+          console.log(`List of ${argv.path} elements:`);
+          directory.forEach((file) => {console.log(file);});
+        }
+      });
+    }
+  },
+});
+
+/**
+ * Yargs execution of the cat command. The corresponding command line options must be included
+ */
+yargs.command({
+  command: 'cat',
+  describe: 'Show the content of a file',
+  builder: {
+    path: {
+      describe: 'File \'s path',
+      demandOption: true,
+      type: 'string',
+    },
+  },
+  handler(argv) {
+    if (typeof argv.path === 'string') {
+      fs.readFile(argv.path, 'utf-8', (err, data) => {
+        if (err) console.log(`Can´t read the file indicated`);
+        else console.log(data);
+      });
+    }
+  },
+});
+
+/**
+ * Yargs execution of the rm command. The corresponding command line options must be included
+ */
+yargs.command({
+  command: 'rm',
+  describe: 'Delete a file or directory',
+  builder: {
+    path: {
+      describe: 'path',
+      demandOption: true,
+      type: 'string',
+    },
+  },
+  handler(argv) {
+    if (typeof argv.path === 'string') {
+      fs.lstat(argv.path, (err, stats) => {
+        if (err) console.log(argv.path + '\'s path doesn\'t exist');
+
+        else {
+          if (stats.isFile()) {
+            fs.rm(`${argv.path}`, (err) => {
+              if (err) console.log(`Cannot delete the file`);
+              else console.log(`Deleted file on path: ${argv.path}`);
+            });
+          } else {
+            fs.rm(`${argv.path}`, {recursive: true}, (err) => {
+              if (err) console.log(`Cannot delete the directory`);
+              else console.log(`Deleted directory on path ${argv.path}`);
+            });
+          }
+        }
+      });
+    }
+  },
+});
+
+/**
+ * Yargs execution of the cp command. The corresponding command line options must be included
+ */
+yargs.command({
+  command: 'cp',
+  describe: 'Copy a file or directory',
+  builder: {
+    oldPath: {
+      describe: 'Old path',
+      demandOption: true,
+      type: 'string',
+    },
+    newPath: {
+      describe: 'Newath',
+      demandOption: true,
+      type: 'string',
+    },
+  },
+  handler(argv) {
+    if (typeof argv.oldPath === 'string' && typeof argv.newPath === 'string' ) {
+      let path: string = `${argv.newPath}`;
+      const pos: number = path.lastIndexOf('/');
+      path = path.substr(0, pos);
+      fs.lstat(argv.oldPath, (err, stats) => {
+        if (err) console.log(argv.oldPath + '\'s path doesn\'t exist');
+        else {
+          fs.lstat(path, (err, stats) => {
+            if (err) console.log(argv.newPath + '\'s path doesn\'t exist');
+            else {
+              const cp = spawn('cp', ['-r', `${argv.oldPath}`, `${argv.newPath}`]);
+              console.log('Elements copied');
+            }
+          });
+        }
+      });
+    }
+  },
+});
+
+/**
+ * Process arguments passed from command line to application
+ */
+yargs.parse();
+
+
+```
+
+Para este ejercicio, hemos realizado un comando con yargs para cada caso, explicaremos cada comando y su implementación:
+
+- **type**: Comprueba que la ruta recibida es un fichero o un directorio. Como argumento recibe una ruta.
+
+Con la función asíncrona `stat`, comprobamos si la ruta existe, posteriormente, mediante las funciones asíncronas de stats `isFile()` o `isDirectory`, sabremos indicar al usuario si la ruta es un directorio o un fichero.
+
+- **mkdir**: Nos crea un directorio. Como argumento recibe una ruta.
+
+Con la función asíncrona `mkdir`, creamos un directorio en la ruta recibida como parámetro, si la ruta es inválida, aparecerá un error.
+
+- **list**: Muestra el contenido de una carpeta. Como argumento recibe una ruta.
+
+Con la función asíncrona `readdir`, mostramos elemento a elemento, todos los contenidos del directorio mediante un console.log, si la ruta es inválida, aparecerá un error.
+
+- **cat**: Muestra el contenido de un fichero. Como argumento recibe una ruta.
+
+Con la función asíncrona `readFile`, mostramos el contenido del fichero mediante un console.log de la ruta dada, si la ruta es inválida, aparecerá un error.
+
+- **rm**: Elimina ficheros o directorios. Como argumento recibe una ruta.
+
+Primeramente con la función `lstat`, comprobamos que la ruta existe, si es inválida aparecerá un error.
+
+A continuación, si la ruta es un fichero (`isFile()`), eliminamos el fichero mediante la función asíncrona `rm`, sin espicificar una búsqueda recursiva, si no se puede borrar el fichero, aparecerá un mensaje de error.
+
+Sin embargo, si la ruta es un fichero (`isDirectory()`), eliminamos el directorio mediante la función asíncrona `rm`, especificando una búsqueda recursiva, de esta manera indicamos que borre todo lo que se encuentre dentro de dicho directorio, si no se puede borrar el directorio, aparecerá un mensaje de error.
+
+- **cp**: Copia un fichero o directorio a la ruta especificada. Como argumento recibe la ruta de donde se copia, y la ruta destino.
+
+Primeramente con la función `lstat`, comprobamos que la ruta de donde vamos a copiar existe, si es inválida aparecerá un error.
+
+Después con la misma función, comprobamos que la ruta destino existe, si es inválida aparecerá un error.
+
+Finalmente con el la función asíncrona **spawn**, especificamos el comando `cp` de linux, junto con las dos rutas como argumento, y realizará la operación.
+
+
 
