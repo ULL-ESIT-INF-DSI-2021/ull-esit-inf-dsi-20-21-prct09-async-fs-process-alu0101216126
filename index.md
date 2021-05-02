@@ -363,3 +363,105 @@ A continuación a dicha variable le aplicaremos la propiedad de lectura `stdout`
 
 Finalmente, mostraremos la cantidad de líneas, palabras o caracteres del fichero, según se haya especificado en los parámetros recibidos. Como esta vez no podemos usar **pipe** para redirigir la salida, simplemente guardamos las salidas en la string `final`, y al final del método realizamos un `console.log()` de dicha string.
 
+### 4.3 Ejercicio 3
+
+**Enunciado:**
+
+A partir de la aplicación de procesamiento de notas desarrollada en la Práctica 8, desarrolle una aplicación que reciba desde la línea de comandos el nombre de un usuario de la aplicación de notas, así como la ruta donde se almacenan las notas de dicho usuario. Puede gestionar el paso de parámetros desde la línea de comandos haciendo uso de yargs. La aplicación a desarrollar deberá controlar los cambios realizados sobre todo el directorio especificado al mismo tiempo que dicho usuario interactúa con la aplicación de procesamiento de notas. Nótese que no hace falta modificar absolutamente nada en la aplicación de procesamiento de notas. Es una aplicación que se va a utilizar para provocar cambios en el sistema de ficheros.
+
+Para ello, utilice la función watch y no la función watchFile, dado que esta última es más ineficiente que la primera. La función watch devuelve un objeto Watcher, que también es un objeto EventEmitter. ¿Qué evento emite el objeto Watcher cuando se crea un nuevo fichero en el directorio observado? ¿Y cuando se elimina un fichero existente? ¿Y cuando se modifica?
+
+Con cada cambio detectado en el directorio observado, el programa deberá indicar si se ha añadido, modificado o borrado una nota, además de indicar el nombre concreto del fichero creado, modificado o eliminado para alojar dicha nota.
+
+Programe defensivamente, es decir, trate de controlar los potenciales errores que podrían surgir a la hora de ejecutar su aplicación.
+
+Por último, trate de contestar a las siguientes preguntas:
+
+- ¿Cómo haría para mostrar, no solo el nombre, sino también el contenido del fichero, en el caso de que haya sido creado o modificado?
+- ¿Cómo haría para que no solo se observase el directorio de un único usuario sino todos los directorios correspondientes a los diferentes usuarios de la aplicación de notas?
+
+**Código**
+
+```ts
+import * as fs from 'fs';
+import * as yargs from 'yargs';
+
+/**
+ * Yargs execution of the watch command. The corresponding command line options must be included.
+ */
+yargs.command({
+  command: 'watch',
+  describe: 'Control user\'s changes',
+  builder: {
+    user: {
+      describe: 'User to watch',
+      demandOption: true,
+      type: 'string',
+    },
+  },
+  handler(argv) {
+    if (typeof argv.user === 'string') {
+      let prevSize: number = 0;
+      let actualSize: number = 0;
+      fs.readdir('./database/' + argv.user, (err, files) => {
+        if (err) console.log('Path doesn\'t exist'); // error handling
+        prevSize = files.length;
+      });
+
+      fs.access('./database/' + argv.user, fs.constants.F_OK, (err) => {
+        let wait: boolean = false;
+
+        // error handling
+       if (err) console.log(argv.user + ' can\'t access');
+
+        else {
+          fs.watch('./database/' + argv.user, (eventType, filename) => {
+            if (wait) return;
+            wait = true;
+            fs.readdir('./database/' + argv.user, (err, files) => {
+              if (err) console.log('Unexpected error'); // error handling
+              actualSize = files.length;
+
+              if (prevSize < actualSize) console.log(`File ${filename} has been added\n`);
+              else if (eventType === 'change') console.log(`File ${filename} has been modified\n`);
+              else if (eventType === 'rename') console.log(`File ${filename} has been deleted\n`);
+
+              prevSize = actualSize;
+              setTimeout(() => {
+                wait = false;
+              }, 100);
+            });
+          });
+        }
+      });
+    }
+  },
+});
+
+/**
+ * Process arguments passed from command line to application
+ */
+yargs.parse();
+```
+
+Para saber que notas de qué usuario debemos observar, mediante la herramienta **yargs**, debemos de crear el comando **watch**, cuyo argumento sea el usuario a observar. **watch** observará los cambios que se lleven a cabo en las notas de dicho usuario.
+
+Para ello mediante la función asíncrona `readdir()`, especificamos la ruta con el usuario que se nos indicó, si el usuario es incorrecto, pues en el `callback` se mostrará un error de que dicho usuario es inválido. Si el usuario es correcto, procederemos a obtener la cantidad de elementos que hay en la carpeta, y lo guardamos en `prevSize`, esto nos servirá para saber cuando se añade un fichero.
+
+Ahora mediante la función asíncrona `access()` comprobamos si el usuario tiene los permisos necesarios para acceder a la carpeta, si el usuario no tiene los permisos, pues en el `callback` se mostrará un error de que dicho usuario no puede acceder. Si no, ya podremos comenzar a observar los cambios en el directorio mediante la función asíncrona `watch()`.
+
+En dicha función indicamos la ruta a observar y un callback. Lo que haremos en dicho callback primeramente, es obtener de nuevo la cantidad de elementos de la carpeta y lo guardamos en `actualSize`, de esta manera, si prevSize es menor que actualSize, es que se añadió un elemento. Por otra parte, si el evento a realizar se llama `change`, es que se modificó un fichero, y si es `rename`, es que se eliminó un fichero. De esta manera podemos saber qué mensaje mostrar según la acción que se realize.
+
+Finalmente, después de esta serie de condiciones, volvemos a igualar los tamaños de prevSize y actualSize para la siguiente iteración. La función asíncrona `setTimeOut()` en este caso simplemente la usamos para que no se muestren mensajes duplicados.
+
+Respecto a las preguntas:
+
+- ¿Cómo haría para mostrar, no solo el nombre, sino también el contenido del fichero, en el caso de que haya sido creado o modificado?
+
+Para crear el fichero o modificarlo, pues emplearía una función asíncrona denominada `readFile`, esta función lee todo el contenido de un fichero, y dicho contenido se mostraría por consola.
+
+- ¿Cómo haría para que no solo se observase el directorio de un único usuario sino todos los directorios correspondientes a los diferentes usuarios de la aplicación de notas?
+
+Lo que se debería de hacer primeramente, sería que en vez de pasarle la ruta `./database/user`, se le pasaría solo `./database`, es decir, el directorio que contiene todos los directorios de los distintos usuarios con sus notas. Una vez realizado esto, se debería incluir `{recursive: true}` como argumento de la función `watch`, con esto indicamos que también se deben observar todos los directorios que contiene el propio directorio `./database`.
+
+
