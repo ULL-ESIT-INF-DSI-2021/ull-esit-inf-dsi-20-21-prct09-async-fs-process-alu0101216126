@@ -705,5 +705,16 @@ Después con la misma función, comprobamos que la ruta destino existe, si es in
 
 Finalmente con el la función asíncrona **spawn**, especificamos el comando `cp` de linux, junto con las dos rutas como argumento, y realizará la operación.
 
+### 5. Conclusión
 
+En lo referente a la conclusión de la práctica, puedo destacar en primer lugar, que he podido comprender el uso de la pila de llamadas y de esta manera entender como funciona la ejecución en JavaScript. A su vez la API de callbacks de Node.js, nos permite realizar una gran variedad de acciones para el manejo de ficheros, o para realizar ciertas acciones en determinados momentos. También la API asíncrona de Node.js, contiene una gran variedad de métodos que también nos sirven para el manejo de fichero, pero por ejemplo, con métodos como spawn, podremos realizar comandos de la terminal de linux, dentro de nuestro propio código, por lo que es un método muy importante.
 
+Finalmente, comentar que ya había trabajado con el manejo de ficheros en otros lenguajes, pero en TS, me resultó más cómo debido a las herramientas que dispone. 
+
+Todas estas herramientas las considero muy útiles y necesarias, ya que si realizamos algún proyecto de BackEnd, el uso de estas herramientas que vimos en esta práctica, serán fundamentales. 
+
+### 6. Bibliografía
+* [Documentación del API de callbacks de Node.js](https://nodejs.org/dist/latest/docs/api/fs.html#fs_callback_api)
+* [Documentación del API asíncrona de Node.js](https://nodejs.org/dist/latest/docs/api/child_process.html#child_process_asynchronous_process_creation)
+* [Documentación de Stream](https://nodejs.org/api/stream.html)
+* [Documentación del paquete yargs](https://www.npmjs.com/package/yargs)
