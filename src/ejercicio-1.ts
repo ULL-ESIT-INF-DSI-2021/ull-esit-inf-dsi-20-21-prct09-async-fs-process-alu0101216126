@@ -1,5 +1,5 @@
 /**
- * Este ejercicio se llevará a cabo en el informe debido a que es una traza
+ * Este ejercicio se llevará a cabo y se comentará en el informe debido a que es una traza
  */
 
 import {access, constants, watch} from 'fs';
